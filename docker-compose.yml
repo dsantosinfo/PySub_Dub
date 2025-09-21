@@ -1,0 +1,83 @@
+# docker-compose.yml
+
+services:
+  # Serviço do Banco de Dados PostgreSQL
+  db:
+    image: "postgres:15-alpine"
+    volumes:
+      # Mapeia o volume nomeado para o diretório de dados do Postgres para persistência
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      # Estas credenciais são usadas pelo Postgres para criar o banco na primeira vez.
+      # ELAS DEVEM CORRESPONDER AO QUE VOCÊ DEFINIU NA DATABASE_URL no arquivo .env
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=pysub_dub_db
+    ports:
+      # Expõe a porta do Postgres no seu computador (opcional, para debug com um cliente de BD)
+      - "5432:5432"
+    healthcheck:
+      # Comando para verificar se o banco de dados está pronto para aceitar conexões
+      test: ["CMD-SHELL", "pg_isready -U user -d pysub_dub_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Serviço do Redis: nosso broker e backend de resultados para o Celery
+  redis:
+    image: "redis:7-alpine"
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Serviço da API FastAPI
+  api:
+    build: .
+    command: python run.py
+    volumes:
+      - .:/app
+      - shared_data:/app/shared_files
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      # Garante que Redis e DB estejam prontos (healthy) ANTES de iniciar a API
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Serviço do Worker Celery
+  worker:
+    build: .
+    # --- COMANDO ALTERADO ---
+    # Agora usa o pool de execução 'gevent' (-P gevent), que é ideal para
+    # tarefas assíncronas e I/O-bound, resolvendo os conflitos de event loop.
+    # A concorrência (-c) pode ser muito maior, pois usa greenlets leves.
+    command: >
+      python -m celery -A app.core.celery_app.celery_app worker --loglevel=info -P gevent -c 100
+    volumes:
+      - .:/app
+      - shared_data:/app/shared_files
+    env_file:
+      - .env
+    depends_on:
+      # Garante que Redis e DB estejam prontos (healthy) ANTES de iniciar o worker
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+# Definição dos volumes nomeados no nível raiz
+volumes:
+  shared_data:
+  postgres_data: # Volume para persistir os dados do banco de dados

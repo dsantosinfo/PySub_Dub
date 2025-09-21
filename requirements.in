@@ -1,0 +1,31 @@
+# requirements.in
+
+# --- Framework da API ---
+fastapi
+uvicorn[standard]
+
+# --- Fila de Tarefas Assíncronas ---
+celery==5.4.0
+redis==5.0.4
+gevent # <<< ADICIONADO: Engine de concorrência para o Celery
+
+# --- Banco de Dados e ORM ---
+sqlalchemy[asyncio] # Suporte para operações assíncronas com a DBAPI
+alembic           # Para migrações de schema do banco de dados
+psycopg2-binary   # Driver para PostgreSQL (necessário pelo Alembic/SQLAlchemy síncrono)
+asyncpg           # Driver assíncrono para PostgreSQL (usado pelo FastAPI/SQLAlchemy)
+
+# --- Utilitários e Configuração ---
+python-dotenv
+pydantic-settings
+python-multipart    # Para processamento de uploads de arquivos
+
+# --- APIs e Processamento de Mídia ---
+groq
+ffmpeg-python==0.2.0
+librosa
+soundfile
+
+# --- Segurança ---
+cryptography        # Para criptografar/descriptografar a chave da API no banco
+passlib[bcrypt]     # Para hashing de senhas

@@ -1,0 +1,41 @@
+# .dockerignore
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Ambiente Virtual
+.venv
+venv
+env
+ENV
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+
+# Arquivos de IDE e sistema
+.vscode/
+.idea/
+*.DS_Store
+
+# Arquivo de ambiente - será injetado em tempo de execução, nunca copiado para a imagem
+.env
+
+# Arquivos de dependências e build do Python
+build/
+dist/
+*.egg-info
+
+# Arquivos temporários e logs
+*.log
+*.tmp
