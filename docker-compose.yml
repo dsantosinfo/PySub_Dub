@@ -1,0 +1,76 @@
+# docker-compose.yml
+
+services:
+  db:
+    image: "postgres:15-alpine"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=pysub_dub_db
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d pysub_dub_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: "redis:7-alpine"
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build: .
+    command: >
+      bash -c "python -m alembic upgrade head && python run.py"
+    volumes:
+      - .:/app
+      - shared_data:/app/shared_files
+      - ./tts_models:/app/tts_models:ro
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    user: "app"
+    restart: unless-stopped
+
+  # --- INÍCIO DA ALTERAÇÃO ---
+  # Unificamos os workers em um único serviço otimizado para I/O.
+  # Removemos os workers específicos e os substituímos por um
+  # único 'worker' genérico.
+  worker:
+    build: .
+    command: >
+      python -m celery -A app.core.celery_app.celery_app worker --loglevel=info -P gevent -c 50
+    environment:
+      # Adicione esta linha para ativar o patch no worker
+      - WORKER_TYPE=gevent
+    volumes:
+      - .:/app
+      - shared_data:/app/shared_files
+      - ./tts_models:/app/tts_models:ro
+    env_file:
+      - .env
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    user: "app"
+    restart: unless-stopped
+  # --- FIM DA ALTERAÇÃO ---
+
+volumes:
+  shared_data:
+  postgres_data:

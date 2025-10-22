@@ -1,0 +1,36 @@
+# requirements.in
+
+# --- Framework da API ---
+fastapi
+uvicorn[standard]
+
+# --- Fila de Tarefas Assíncronas ---
+celery==5.4.0
+redis==5.0.4
+gevent
+
+# --- Banco de Dados e ORM ---
+sqlalchemy[asyncio]
+alembic
+psycopg2-binary
+asyncpg
+
+# --- Utilitários e Configuração ---
+python-dotenv
+pydantic-settings
+python-multipart
+pydantic[email]
+# --- APIs e Processamento de Mídia ---
+groq
+ffmpeg-python==0.2.0
+librosa
+soundfile
+piper-tts
+edge-tts
+pydub
+
+# --- Segurança ---
+cryptography
+passlib
+bcrypt<4.1
+
